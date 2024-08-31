@@ -1,4 +1,10 @@
 
+
+document.body.addEventListener('touchstart', (e) => {
+  console.log('touchstart', e)
+  console.log('target', e.target)
+}, { passive: false });
+
 let lastTouchX = 0;
 let lastTouchY = 0;
 
@@ -117,8 +123,10 @@ function renderTetrisPiece(key, piece, container) {
   container.appendChild(pieceElement);
 
   pieceElement.setAttribute('draggable', true);
-  pieceElement.addEventListener('dragstart', dragStart);
-  pieceElement.addEventListener('dragend', dragEnd);
+  //pieceElement.addEventListener('dragstart', dragStart);
+  //pieceElement.addEventListener('dragend', dragEnd);
+  pieceElement.addEventListener('mousedown', dragStart);
+  pieceElement.addEventListener('touchstart', dragStart);
 }
 
 // Function to update the piece grid
@@ -228,39 +236,33 @@ function replaceUsedPiece(usedPieceElement) {
 
 // Function to initialize drag-and-drop and touch events
 function initDragAndDrop() {
-  //const gridCells = document.querySelectorAll('.grid-cell');
   const tetrisPieces = document.querySelectorAll('.tetris-piece');
 
   tetrisPieces.forEach(piece => {
     piece.addEventListener('mousedown', dragStart);
-    piece.addEventListener('touchstart', dragStart, { passive: false });
+    piece.addEventListener('touchstart', dragStart);
   });
 
   document.addEventListener('mousemove', drag);
-  document.addEventListener('touchmove', drag, { passive: false });
+  document.addEventListener('touchmove', drag);
 
-  //document.addEventListener('mouseup', dragEnd);
-  //document.addEventListener('touchend', dragEnd);
 
   document.addEventListener('mouseup', drop);
   document.addEventListener('touchend', drop);
-
-  /*
-  gridCells.forEach(cell => {
-    cell.addEventListener('mouseup', drop);
-    cell.addEventListener('touchend', drop);
-  });
-  */
+  
 }
 
 // Unified drag start event handler
 function dragStart(e) {
+  console.log('dragStart', e)
   e.preventDefault();
+
   const pieceElement = e.target.closest('.tetris-piece');
   if (!pieceElement || pieceElement.classList.contains('unplaceable')) {
     return;
   }
 
+  console.log('pieceElement', pieceElement)
   const shape = JSON.parse(pieceElement.dataset.shape);
   const rect = pieceElement.getBoundingClientRect();
   const clientX = e.clientX || e.touches[0].clientX;
@@ -324,6 +326,7 @@ function dragStart(e) {
 
 // Unified drag event handler
 function drag(e) {
+  console.log('drag', e)
   e.preventDefault();
   if (draggedPiece) {
     const clientX = e.clientX || e.touches[0].clientX;
@@ -340,6 +343,7 @@ function drag(e) {
 
 
 function drop(e) {
+  console.log('drop', e)
   e.preventDefault();
   if (!draggedPiece) return;
 
@@ -349,8 +353,8 @@ function drop(e) {
   const pieceId = draggedPiece.dataset.originalId;
   const pieceShape = JSON.parse(draggedPiece.dataset.shape);
 
-  lastTouchX = 0;
-  lastTouchY = 0;
+  lastTouchX = null;
+  lastTouchY = null;
 
   const gridSize = 5;
   const gridContainer = document.getElementById('game-grid-container');

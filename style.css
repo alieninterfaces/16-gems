@@ -28,6 +28,7 @@ body {
   place-items: center;
   min-width: 320px;
   min-height: 100vh;
+  user-select: none;
 }
 
 h1 {
@@ -188,12 +189,14 @@ button:focus-visible {
 .piece-grid {
   display: grid;
   gap: 2px;
+  pointer-events: none;
 }
 
 .piece-cell {
   width: 10px; /* Adjust cell size as needed */
   height: 10px;
   border-radius: 2px;
+  pointer-events: none;
 }
 
 #piece-I,
