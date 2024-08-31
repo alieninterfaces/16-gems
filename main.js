@@ -1,4 +1,7 @@
 
+let lastTouchX = 0;
+let lastTouchY = 0;
+
 // Define Tetris pieces
 const tetrisPieces = {
   I: {
@@ -122,14 +125,14 @@ function renderTetrisPiece(key, piece, container) {
 function updatePieceGrid(grid, shape, color) {
   grid.innerHTML = '';
   grid.style.display = 'grid';
-  grid.style.gridTemplateRows = `repeat(${shape.length}, 20px)`;
-  grid.style.gridTemplateColumns = `repeat(${shape[0].length}, 20px)`;
+  grid.style.gridTemplateRows = `repeat(${shape.length}, 10px)`;
+  grid.style.gridTemplateColumns = `repeat(${shape[0].length}, 10px)`;
 
   shape.forEach(row => {
     row.forEach(cell => {
       const cellElement = document.createElement('div');
       cellElement.className = 'piece-cell';
-      cellElement.style.backgroundColor = cell ? color : 'transparent';
+      //cellElement.style.backgroundColor = cell ? color : 'transparent';
       if (cell) {
         cellElement.style.backgroundImage = 'url("./public/bubble.png")';
         cellElement.style.backgroundSize = 'cover';
@@ -325,6 +328,8 @@ function drag(e) {
   if (draggedPiece) {
     const clientX = e.clientX || e.touches[0].clientX;
     const clientY = e.clientY || e.touches[0].clientY;
+    lastTouchX = clientX;
+    lastTouchY = clientY;
     const cellSize = document.querySelector('.grid-cell').offsetWidth;
     const activeRow = parseInt(draggedPiece.dataset.activeRow || 0);
     const activeCol = parseInt(draggedPiece.dataset.activeCol || 0);
@@ -333,70 +338,20 @@ function drag(e) {
   }
 }
 
-/*
-// Unified drop event handler
-function drop(e) {
-  e.preventDefault();
-  console.log('drop')
-  if (!draggedPiece) return;
-
-  const clientX = e.clientX || (e.changedTouches && e.changedTouches[0].clientX);
-  const clientY = e.clientY || (e.changedTouches && e.changedTouches[0].clientY);
-
-  const pieceShape = JSON.parse(draggedPiece.dataset.shape);
-  const pieceId = draggedPiece.dataset.originalId;
-  const pieceType = pieceId.split('-')[1];
-  const activeRow = parseInt(draggedPiece.dataset.activeRow);
-  const activeCol = parseInt(draggedPiece.dataset.activeCol);
-
-  const gridSize = 5;
-  const gridContainer = document.getElementById('game-grid-container');
-  const gridRect = gridContainer.getBoundingClientRect();
-  const cellSize = (gridRect.width - 10) / gridSize; // Subtract padding
-
-  // Check if the drop occurred within the grid container boundaries
-  if (clientX < gridRect.left || clientX > gridRect.right ||
-      clientY < gridRect.top || clientY > gridRect.bottom) {
-        console.log('out of bounds')
-    returnPieceToBank(pieceId);
-    clearDraggedPiece();
-    clearPreview();
-    return;
-  }
-
-  console.log('in bounds')
-
-  // Adjust the target calculation to consider the center of the piece
-  const pieceWidth = draggedPiece.offsetWidth;
-  const pieceHeight = draggedPiece.offsetHeight;
-  const targetCol = Math.floor((clientX - gridRect.left - 5 - pieceWidth / 2) / cellSize);
-  const targetRow = Math.floor((clientY - gridRect.top - 5 - pieceHeight / 2) / cellSize);
-  const targetIndex = targetRow * gridSize + targetCol;
-
-  if (canPlacePiece(pieceShape, targetIndex, gridSize)) {
-    const color = draggedPiece.dataset.color;
-    placePiece(pieceShape, targetIndex, gridSize, color);
-    replaceUsedPiece(document.getElementById(pieceId));
-  } else {
-    returnPieceToBank(pieceId);
-  }
-
-  clearDraggedPiece();
-  clearPreview();
-}
-  */
 
 function drop(e) {
   e.preventDefault();
-  console.log('drop')
   if (!draggedPiece) return;
 
-  const clientX = e.clientX || e.touches[0].clientX;
-  const clientY = e.clientY || e.touches[0].clientY;
+  const clientX = e.clientX || lastTouchX;
+  const clientY = e.clientY || lastTouchY;
   const cellSize = document.querySelector('.grid-cell').offsetWidth;
   const pieceId = draggedPiece.dataset.originalId;
   const pieceShape = JSON.parse(draggedPiece.dataset.shape);
 
+  lastTouchX = 0;
+  lastTouchY = 0;
+
   const gridSize = 5;
   const gridContainer = document.getElementById('game-grid-container');
   const gridRect = gridContainer.getBoundingClientRect();
@@ -404,7 +359,6 @@ function drop(e) {
   // Check if the drop occurred within the grid container boundaries
   if (clientX < gridRect.left || clientX > gridRect.right ||
       clientY < gridRect.top || clientY > gridRect.bottom) {
-        console.log('out of bounds')
     returnPieceToBank(pieceId);
     clearDraggedPiece();
     clearPreview();
