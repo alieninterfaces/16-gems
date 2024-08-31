@@ -156,10 +156,24 @@ button:focus-visible {
 .tetris-piece {
   border: 2px solid #646cff;
   border-radius: 4px;
-  cursor: pointer;
+  cursor: grab;
   padding: 5px;
   background-color: rgba(255, 255, 255, 0.1);
   transition: transform 0.3s ease;
+  transition: opacity 0.3s ease;
+}
+
+.tetris-piece.unplaceable {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.tetris-piece.dragging {
+  opacity: 0.3;
+}
+
+.tetris-piece:active {
+  cursor: grabbing;
 }
 
 .piece-grid {
@@ -192,8 +206,9 @@ button:focus-visible {
 
 /* Add styles for the hover preview */
 .grid-cell.preview {
-  background-color: rgba(100, 108, 255, 0.3); /* Light blue with transparency */
-  border: 2px solid #646cff;
+  outline: 2px solid #00f;
+  z-index: 1;
+  position: relative;
 }
 
 .tetris-piece.selected {
