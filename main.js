@@ -131,7 +131,7 @@ function updatePieceGrid(grid, shape, color) {
       cellElement.className = 'piece-cell';
       cellElement.style.backgroundColor = cell ? color : 'transparent';
       if (cell) {
-        cellElement.style.backgroundImage = 'url("/bubble.png")';
+        cellElement.style.backgroundImage = 'url("./bubble.png")';
         cellElement.style.backgroundSize = 'cover';
         const hueRotation = getHueRotationFromColor(color);
         cellElement.style.filter = `hue-rotate(${hueRotation}deg)`;
@@ -297,7 +297,7 @@ function dragStart(e) {
   shape.forEach((row, rowIndex) => {
     row.forEach((cell, colIndex) => {
       const cellElement = document.createElement('div');
-      cellElement.style.backgroundImage = cell ? 'url("/bubble.png")' : 'transparent';
+      cellElement.style.backgroundImage = cell ? 'url("./bubble.png")' : 'transparent';
       cellElement.style.backgroundSize = 'cover';
       console.log('a', color);
       const hueRotation = getHueRotationFromColor(color);
@@ -516,7 +516,7 @@ function placePiece(pieceShape, targetIndex, gridSize, color) {
         const cellIndex = (targetRow + row) * gridSize + (targetCol + col);
         const cell = document.querySelector(`.grid-cell[data-index="${cellIndex}"]`);
         if (cell) {
-          cell.style.backgroundImage = 'url("/bubble.png")';
+          cell.style.backgroundImage = 'url("./bubble.png")';
           cell.style.backgroundSize = 'cover';
           const hueRotation = getHueRotationFromColor(color);
           cell.style.filter = `hue-rotate(${hueRotation}deg)`;
