@@ -228,7 +228,7 @@ function replaceUsedPiece(usedPieceElement) {
 
 // Function to initialize drag-and-drop and touch events
 function initDragAndDrop() {
-  const gridCells = document.querySelectorAll('.grid-cell');
+  //const gridCells = document.querySelectorAll('.grid-cell');
   const tetrisPieces = document.querySelectorAll('.tetris-piece');
 
   tetrisPieces.forEach(piece => {
@@ -239,13 +239,18 @@ function initDragAndDrop() {
   document.addEventListener('mousemove', drag);
   document.addEventListener('touchmove', drag, { passive: false });
 
-  document.addEventListener('mouseup', dragEnd);
-  document.addEventListener('touchend', dragEnd);
+  //document.addEventListener('mouseup', dragEnd);
+  //document.addEventListener('touchend', dragEnd);
 
+  document.addEventListener('mouseup', drop);
+  document.addEventListener('touchend', drop);
+
+  /*
   gridCells.forEach(cell => {
     cell.addEventListener('mouseup', drop);
     cell.addEventListener('touchend', drop);
   });
+  */
 }
 
 // Unified drag start event handler
@@ -331,6 +336,7 @@ function drag(e) {
   }
 }
 
+/*
 // Unified drop event handler
 function drop(e) {
   e.preventDefault();
@@ -364,6 +370,50 @@ function drop(e) {
   console.log('in bounds')
 
   // Adjust the target calculation to consider the center of the piece
+  const pieceWidth = draggedPiece.offsetWidth;
+  const pieceHeight = draggedPiece.offsetHeight;
+  const targetCol = Math.floor((clientX - gridRect.left - 5 - pieceWidth / 2) / cellSize);
+  const targetRow = Math.floor((clientY - gridRect.top - 5 - pieceHeight / 2) / cellSize);
+  const targetIndex = targetRow * gridSize + targetCol;
+
+  if (canPlacePiece(pieceShape, targetIndex, gridSize)) {
+    const color = draggedPiece.dataset.color;
+    placePiece(pieceShape, targetIndex, gridSize, color);
+    replaceUsedPiece(document.getElementById(pieceId));
+  } else {
+    returnPieceToBank(pieceId);
+  }
+
+  clearDraggedPiece();
+  clearPreview();
+}
+  */
+
+function drop(e) {
+  e.preventDefault();
+  console.log('drop')
+  if (!draggedPiece) return;
+
+  const clientX = e.clientX || e.touches[0].clientX;
+  const clientY = e.clientY || e.touches[0].clientY;
+  const cellSize = document.querySelector('.grid-cell').offsetWidth;
+  const pieceId = draggedPiece.dataset.originalId;
+  const pieceShape = JSON.parse(draggedPiece.dataset.shape);
+
+  const gridSize = 5;
+  const gridContainer = document.getElementById('game-grid-container');
+  const gridRect = gridContainer.getBoundingClientRect();
+
+  // Check if the drop occurred within the grid container boundaries
+  if (clientX < gridRect.left || clientX > gridRect.right ||
+      clientY < gridRect.top || clientY > gridRect.bottom) {
+        console.log('out of bounds')
+    returnPieceToBank(pieceId);
+    clearDraggedPiece();
+    clearPreview();
+    return;
+  }
+
   const pieceWidth = draggedPiece.offsetWidth;
   const pieceHeight = draggedPiece.offsetHeight;
   const targetCol = Math.floor((clientX - gridRect.left - 5 - pieceWidth / 2) / cellSize);
