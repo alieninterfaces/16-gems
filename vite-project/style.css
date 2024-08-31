@@ -146,15 +146,15 @@ button:focus-visible {
 #game-container {
   display: flex;
   justify-content: center;
-  align-items: flex-start;
+  align-items: center;
+  flex-direction: column;
   gap: 20px;
 }
 
 #tetris-bank {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 20px;
-  width: 120px; /* Adjust as needed */
 }
 
 .tetris-piece {

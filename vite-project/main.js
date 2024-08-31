@@ -133,6 +133,10 @@ function updatePieceGrid(grid, shape, color) {
       const cellElement = document.createElement('div');
       cellElement.className = 'piece-cell';
       cellElement.style.backgroundColor = cell ? color : 'transparent';
+      if (cell) {
+        cellElement.style.backgroundImage = 'url("/bubble.png")';
+        cellElement.style.backgroundSize = 'cover';
+      }
       grid.appendChild(cellElement);
     });
   });
@@ -175,137 +179,47 @@ function replaceUsedPiece(usedPieceElement) {
   updatePiecesOpacity();
 }
 
-// Function to initialize drag-and-drop and hover preview
+// Function to initialize drag-and-drop and touch events
 function initDragAndDrop() {
   const gridCells = document.querySelectorAll('.grid-cell');
   const tetrisPieces = document.querySelectorAll('.tetris-piece');
 
   tetrisPieces.forEach(piece => {
-    piece.addEventListener('dragstart', dragStart);
-    piece.addEventListener('dragend', dragEnd);
+    piece.addEventListener('mousedown', dragStart);
+    piece.addEventListener('touchstart', dragStart, { passive: false });
   });
+
+  document.addEventListener('mousemove', drag);
+  document.addEventListener('touchmove', drag, { passive: false });
+
+  document.addEventListener('mouseup', dragEnd);
+  document.addEventListener('touchend', dragEnd);
 
   gridCells.forEach(cell => {
-    cell.addEventListener('dragover', dragOver);
-    cell.addEventListener('drop', drop);
-  });
-
-  document.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    if (draggedPiece) {
-      const cellSize = document.querySelector('.grid-cell').offsetWidth;
-      const activeRow = parseInt(draggedPiece.dataset.activeRow || 0);
-      const activeCol = parseInt(draggedPiece.dataset.activeCol || 0);
-      updateDraggedPiecePosition(e, activeRow, activeCol, cellSize);
-      showPreview(e);
-    }
+    cell.addEventListener('mouseup', drop);
+    cell.addEventListener('touchend', drop);
   });
 }
 
-// Function to select a piece
-function selectPiece(e) {
-  if (selectedPiece) {
-    selectedPiece.classList.remove('selected');
-  }
-  selectedPiece = e.currentTarget;
-  selectedPiece.classList.add('selected');
-
-  const shape = JSON.parse(selectedPiece.dataset.shape);
-  const rect = selectedPiece.getBoundingClientRect();
-  const offsetX = e.clientX - rect.left;
-  const offsetY = e.clientY - rect.top;
-
-  const cellSize = rect.width / shape[0].length;
-  const [activeRow, activeCol] = getActiveCell(shape, offsetX, offsetY, cellSize);
-
-  selectedPiece.dataset.activeRow = activeRow;
-  selectedPiece.dataset.activeCol = activeCol;
-}
-
-// Function to get the active cell based on mouse position
-function getActiveCell(shape, offsetX, offsetY, cellSize) {
-  const row = Math.floor(offsetY / cellSize);
-  const col = Math.floor(offsetX / cellSize);
-  
-  if (shape[row] && shape[row][col]) {
-    return [row, col];
-  }
-  
-  // If the clicked cell is not active, find the nearest active cell
-  const rows = shape.length;
-  const cols = shape[0].length;
-  let minDistance = Infinity;
-  let nearestActiveCell = [0, 0];
-
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      if (shape[r][c]) {
-        const distance = Math.sqrt(Math.pow(r - row, 2) + Math.pow(c - col, 2));
-        if (distance < minDistance) {
-          minDistance = distance;
-          nearestActiveCell = [r, c];
-        }
-      }
-    }
-  }
-
-  return nearestActiveCell;
-}
-
-// Function to show preview
-function showPreview(e) {
-  if (!draggedPiece) return;
-
-  const shape = JSON.parse(draggedPiece.dataset.shape);
-  const gridSize = 5;
-  const gridContainer = document.getElementById('game-grid-container');
-  const gridRect = gridContainer.getBoundingClientRect();
-  const cellSize = (gridRect.width - 10) / gridSize; // Subtract padding
-  
-  const activeRow = parseInt(draggedPiece.dataset.activeRow || 0);
-  const activeCol = parseInt(draggedPiece.dataset.activeCol || 0);
-
-  const targetCol = Math.floor((e.clientX - gridRect.left - 5) / cellSize) - activeCol;
-  const targetRow = Math.floor((e.clientY - gridRect.top - 5) / cellSize) - activeRow;
-  const targetIndex = targetRow * gridSize + targetCol;
-
-  clearPreview();
-
-  if (canPlacePiece(shape, targetIndex, gridSize)) {
-    for (let row = 0; row < shape.length; row++) {
-      for (let col = 0; col < shape[row].length; col++) {
-        if (shape[row][col]) {
-          const cellIndex = (targetRow + row) * gridSize + (targetCol + col);
-          const cell = document.querySelector(`.grid-cell[data-index="${cellIndex}"]`);
-          if (cell) cell.classList.add('preview');
-        }
-      }
-    }
-  }
-}
-
-// Function to clear preview
-function clearPreview() {
-  document.querySelectorAll('.grid-cell.preview').forEach(cell => {
-    cell.classList.remove('preview');
-  });
-}
-
-// Drag start event handler
+// Unified drag start event handler
 function dragStart(e) {
-  const pieceElement = e.currentTarget;
-  if (pieceElement.classList.contains('unplaceable')) {
-    e.preventDefault();
+  e.preventDefault();
+  const pieceElement = e.target.closest('.tetris-piece');
+  if (!pieceElement || pieceElement.classList.contains('unplaceable')) {
     return;
   }
-  
+
   const shape = JSON.parse(pieceElement.dataset.shape);
   const rect = pieceElement.getBoundingClientRect();
-  const offsetX = e.clientX - rect.left;
-  const offsetY = e.clientY - rect.top;
+  const clientX = e.clientX || e.touches[0].clientX;
+  const clientY = e.clientY || e.touches[0].clientY;
+
+  // Calculate the center of the piece
+  const centerX = rect.width / 2;
+  const centerY = rect.height / 2;
 
   const cellSize = rect.width / shape[0].length;
-  const [activeRow, activeCol] = getActiveCell(shape, offsetX, offsetY, cellSize);
+  const [activeRow, activeCol] = getActiveCell(shape, centerX, centerY, cellSize);
 
   // Create a new element for dragging
   draggedPiece = document.createElement('div');
@@ -331,7 +245,8 @@ function dragStart(e) {
   shape.forEach((row, rowIndex) => {
     row.forEach((cell, colIndex) => {
       const cellElement = document.createElement('div');
-      cellElement.style.backgroundColor = cell ? tetrisPieces[pieceElement.id.split('-')[1]].color : 'transparent';
+      cellElement.style.backgroundImage = cell ? 'url("/bubble.png")' : 'transparent';
+      cellElement.style.backgroundSize = 'cover';
       pieceGrid.appendChild(cellElement);
     });
   });
@@ -339,50 +254,40 @@ function dragStart(e) {
   draggedPiece.appendChild(pieceGrid);
   document.body.appendChild(draggedPiece);
 
-  updateDraggedPiecePosition(e, activeRow, activeCol, gridCellSize);
+  updateDraggedPiecePosition(clientX, clientY, activeRow, activeCol, gridCellSize);
 
   draggedPiece.dataset.shape = JSON.stringify(shape);
   draggedPiece.dataset.activeRow = activeRow;
   draggedPiece.dataset.activeCol = activeCol;
+  draggedPiece.dataset.originalId = pieceElement.id;
 
-  e.dataTransfer.setData('text/plain', JSON.stringify({
-    id: pieceElement.id,
-    shape: shape,
-    activeRow: activeRow,
-    activeCol: activeCol
-  }));
-  
-  // Add a class to the original piece instead of changing opacity
   pieceElement.classList.add('dragging');
-
-  // Prevent the default drag image
-  e.dataTransfer.setDragImage(new Image(), 0, 0);
 }
 
-// Function to update the dragged piece position
-function updateDraggedPiecePosition(e, activeRow, activeCol, cellSize) {
+// Unified drag event handler
+function drag(e) {
+  e.preventDefault();
   if (draggedPiece) {
-    const offsetX = activeCol * cellSize;
-    const offsetY = activeRow * cellSize;
-    draggedPiece.style.left = `${e.clientX - offsetX}px`;
-    draggedPiece.style.top = `${e.clientY - offsetY}px`;
+    const clientX = e.clientX || e.touches[0].clientX;
+    const clientY = e.clientY || e.touches[0].clientY;
+    const cellSize = document.querySelector('.grid-cell').offsetWidth;
+    const activeRow = parseInt(draggedPiece.dataset.activeRow || 0);
+    const activeCol = parseInt(draggedPiece.dataset.activeCol || 0);
+    updateDraggedPiecePosition(clientX, clientY, activeRow, activeCol, cellSize);
+    showPreview(clientX, clientY);
   }
 }
 
-// Drag over event handler
-function dragOver(e) {
-  e.preventDefault();
-  showPreview(e);
-}
-
-// Drop event handler
+// Unified drop event handler
 function drop(e) {
   e.preventDefault();
   if (!draggedPiece) return;
 
-  const data = JSON.parse(e.dataTransfer.getData('text/plain'));
-  const pieceId = data.id;
-  const pieceShape = data.shape;
+  const clientX = e.clientX || (e.changedTouches && e.changedTouches[0].clientX);
+  const clientY = e.clientY || (e.changedTouches && e.changedTouches[0].clientY);
+
+  const pieceShape = JSON.parse(draggedPiece.dataset.shape);
+  const pieceId = draggedPiece.dataset.originalId;
   const pieceType = pieceId.split('-')[1];
   const activeRow = parseInt(draggedPiece.dataset.activeRow);
   const activeCol = parseInt(draggedPiece.dataset.activeCol);
@@ -393,16 +298,19 @@ function drop(e) {
   const cellSize = (gridRect.width - 10) / gridSize; // Subtract padding
 
   // Check if the drop occurred within the grid container boundaries
-  if (e.clientX < gridRect.left || e.clientX > gridRect.right ||
-      e.clientY < gridRect.top || e.clientY > gridRect.bottom) {
+  if (clientX < gridRect.left || clientX > gridRect.right ||
+      clientY < gridRect.top || clientY > gridRect.bottom) {
     returnPieceToBank(pieceId);
     clearDraggedPiece();
     clearPreview();
     return;
   }
 
-  const targetCol = Math.floor((e.clientX - gridRect.left - 5) / cellSize) - activeCol;
-  const targetRow = Math.floor((e.clientY - gridRect.top - 5) / cellSize) - activeRow;
+  // Adjust the target calculation to consider the center of the piece
+  const pieceWidth = draggedPiece.offsetWidth;
+  const pieceHeight = draggedPiece.offsetHeight;
+  const targetCol = Math.floor((clientX - gridRect.left - 5 - pieceWidth / 2) / cellSize);
+  const targetRow = Math.floor((clientY - gridRect.top - 5 - pieceHeight / 2) / cellSize);
   const targetIndex = targetRow * gridSize + targetCol;
 
   if (canPlacePiece(pieceShape, targetIndex, gridSize)) {
@@ -414,6 +322,58 @@ function drop(e) {
 
   clearDraggedPiece();
   clearPreview();
+}
+
+// Function to update the dragged piece position
+function updateDraggedPiecePosition(clientX, clientY, activeRow, activeCol, cellSize) {
+  if (draggedPiece) {
+    const pieceWidth = draggedPiece.offsetWidth;
+    const pieceHeight = draggedPiece.offsetHeight;
+    const offsetX = pieceWidth / 2;
+    const offsetY = pieceHeight / 2;
+    draggedPiece.style.left = `${clientX - offsetX}px`;
+    draggedPiece.style.top = `${clientY - offsetY}px`;
+  }
+}
+
+// Function to show preview
+function showPreview(clientX, clientY) {
+  if (!draggedPiece) return;
+
+  const shape = JSON.parse(draggedPiece.dataset.shape);
+  const gridSize = 5;
+  const gridContainer = document.getElementById('game-grid-container');
+  const gridRect = gridContainer.getBoundingClientRect();
+  const cellSize = (gridRect.width - 10) / gridSize; // Subtract padding
+  
+  const pieceWidth = draggedPiece.offsetWidth;
+  const pieceHeight = draggedPiece.offsetHeight;
+
+  // Adjust the target calculation to consider the center of the piece
+  const targetCol = Math.floor((clientX - gridRect.left - 5 - pieceWidth / 2) / cellSize);
+  const targetRow = Math.floor((clientY - gridRect.top - 5 - pieceHeight / 2) / cellSize);
+  const targetIndex = targetRow * gridSize + targetCol;
+
+  clearPreview();
+
+  if (canPlacePiece(shape, targetIndex, gridSize)) {
+    for (let row = 0; row < shape.length; row++) {
+      for (let col = 0; col < shape[row].length; col++) {
+        if (shape[row][col]) {
+          const cellIndex = (targetRow + row) * gridSize + (targetCol + col);
+          const cell = document.querySelector(`.grid-cell[data-index="${cellIndex}"]`);
+          if (cell) cell.classList.add('preview');
+        }
+      }
+    }
+  }
+}
+
+// Function to clear preview
+function clearPreview() {
+  document.querySelectorAll('.grid-cell.preview').forEach(cell => {
+    cell.classList.remove('preview');
+  });
 }
 
 // Function to check if a piece can be placed
@@ -431,7 +391,7 @@ function canPlacePiece(pieceShape, targetIndex, gridSize) {
         }
         const cellIndex = gridRow * gridSize + gridCol;
         const cell = document.querySelector(`.grid-cell[data-index="${cellIndex}"]`);
-        if (cell.style.backgroundColor !== '') {
+        if (cell.style.backgroundImage !== '') {
           return false;
         }
       }
@@ -441,7 +401,7 @@ function canPlacePiece(pieceShape, targetIndex, gridSize) {
 }
 
 // Function to place a piece on the grid
-function placePiece(pieceShape, targetIndex, gridSize, color) {
+function placePiece(pieceShape, targetIndex, gridSize) {
   const targetRow = Math.floor(targetIndex / gridSize);
   const targetCol = targetIndex % gridSize;
 
@@ -450,7 +410,8 @@ function placePiece(pieceShape, targetIndex, gridSize, color) {
       if (pieceShape[row][col]) {
         const cellIndex = (targetRow + row) * gridSize + (targetCol + col);
         const cell = document.querySelector(`.grid-cell[data-index="${cellIndex}"]`);
-        cell.style.backgroundColor = color;
+        cell.style.backgroundImage = 'url("/bubble.png")';
+        cell.style.backgroundSize = 'cover';
       }
     }
   }
@@ -488,7 +449,7 @@ function isRowComplete(row, gridSize) {
   for (let col = 0; col < gridSize; col++) {
     const cellIndex = row * gridSize + col;
     const cell = document.querySelector(`.grid-cell[data-index="${cellIndex}"]`);
-    if (cell.style.backgroundColor === '') {
+    if (cell.style.backgroundImage === '') {
       return false;
     }
   }
@@ -500,7 +461,7 @@ function isColumnComplete(col, gridSize) {
   for (let row = 0; row < gridSize; row++) {
     const cellIndex = row * gridSize + col;
     const cell = document.querySelector(`.grid-cell[data-index="${cellIndex}"]`);
-    if (cell.style.backgroundColor === '') {
+    if (cell.style.backgroundImage === '') {
       return false;
     }
   }
@@ -512,7 +473,7 @@ function clearRow(row, gridSize) {
   for (let col = 0; col < gridSize; col++) {
     const cellIndex = row * gridSize + col;
     const cell = document.querySelector(`.grid-cell[data-index="${cellIndex}"]`);
-    cell.style.backgroundColor = '';
+    cell.style.backgroundImage = '';
   }
 }
 
@@ -521,7 +482,7 @@ function clearColumn(col, gridSize) {
   for (let row = 0; row < gridSize; row++) {
     const cellIndex = row * gridSize + col;
     const cell = document.querySelector(`.grid-cell[data-index="${cellIndex}"]`);
-    cell.style.backgroundColor = '';
+    cell.style.backgroundImage = '';
   }
 }
 
@@ -552,7 +513,7 @@ function resetGame() {
   // Clear the grid
   const gridCells = document.querySelectorAll('.grid-cell');
   gridCells.forEach(cell => {
-    cell.style.backgroundColor = '';
+    cell.style.backgroundImage = '';
     cell.classList.remove('preview');
   });
 
@@ -672,6 +633,36 @@ function returnPieceToBank(pieceId) {
   if (originalPiece) {
     originalPiece.classList.remove('dragging');
   }
+}
+
+// Function to get the active cell based on mouse position
+function getActiveCell(shape, offsetX, offsetY, cellSize) {
+  const row = Math.floor(offsetY / cellSize);
+  const col = Math.floor(offsetX / cellSize);
+  
+  if (shape[row] && shape[row][col]) {
+    return [row, col];
+  }
+  
+  // If the clicked cell is not active, find the nearest active cell
+  const rows = shape.length;
+  const cols = shape[0].length;
+  let minDistance = Infinity;
+  let nearestActiveCell = [0, 0];
+
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      if (shape[r][c]) {
+        const distance = Math.sqrt(Math.pow(r - row, 2) + Math.pow(c - col, 2));
+        if (distance < minDistance) {
+          minDistance = distance;
+          nearestActiveCell = [r, c];
+        }
+      }
+    }
+  }
+
+  return nearestActiveCell;
 }
 
 // Call the initialization function when the DOM is loaded
