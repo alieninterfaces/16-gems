@@ -1,9 +1,5 @@
 
 
-document.body.addEventListener('touchstart', (e) => {
-  console.log('touchstart', e)
-  console.log('target', e.target)
-}, { passive: false });
 
 let lastTouchX = 0;
 let lastTouchY = 0;
@@ -123,8 +119,6 @@ function renderTetrisPiece(key, piece, container) {
   container.appendChild(pieceElement);
 
   pieceElement.setAttribute('draggable', true);
-  //pieceElement.addEventListener('dragstart', dragStart);
-  //pieceElement.addEventListener('dragend', dragEnd);
   pieceElement.addEventListener('mousedown', dragStart);
   pieceElement.addEventListener('touchstart', dragStart);
 }
@@ -343,7 +337,8 @@ function drag(e) {
 
 
 function drop(e) {
-  console.log('drop', e)
+  console.log('drop', e.target)
+  if (e.target.nodeName === 'BUTTON') return;
   e.preventDefault();
   if (!draggedPiece) return;
 
@@ -644,6 +639,7 @@ function initGame() {
   // Add reset button functionality
   const resetButton = document.getElementById('reset-button');
   resetButton.addEventListener('click', (e) => {
+    console.log('click')
     e.preventDefault();
     resetGame();
     // Cancel any ongoing drag operation
