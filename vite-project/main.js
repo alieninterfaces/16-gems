@@ -110,7 +110,7 @@ function renderTetrisPiece(key, piece, container) {
     shapeClone = rotateMatrix(shapeClone);
   }
   pieceElement.dataset.shape = JSON.stringify(shapeClone);
-  
+  pieceElement.dataset.color = piece.color;
   updatePieceGrid(grid, shapeClone, piece.color);
 
   pieceElement.appendChild(grid);
@@ -136,10 +136,57 @@ function updatePieceGrid(grid, shape, color) {
       if (cell) {
         cellElement.style.backgroundImage = 'url("/bubble.png")';
         cellElement.style.backgroundSize = 'cover';
+        const hueRotation = getHueRotationFromColor(color);
+        cellElement.style.filter = `hue-rotate(${hueRotation}deg)`;
       }
       grid.appendChild(cellElement);
     });
   });
+}
+
+function getHueRotationFromColor(color) {
+  // Convert hex to RGB
+  const rgb = hexToRgb(color);
+  const hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
+  const hueRotation = Math.round(hsl[0] * 360);
+  return hueRotation;
+}
+
+function hexToRgb(hex) {
+  // Remove the hash if it's there
+  hex = hex.replace(/^#/, '');
+
+  // Parse the hex values
+  const bigint = parseInt(hex, 16);
+  const r = (bigint >> 16) & 255;
+  const g = (bigint >> 8) & 255;
+  const b = bigint & 255;
+
+  return { r, g, b };
+}
+
+function rgbToHsl(r, g, b) {
+  r /= 255;
+  g /= 255;
+  b /= 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  let h, s, l = (max + min) / 2;
+
+  if (max === min) {
+    h = s = 0; // achromatic
+  } else {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+      case g: h = (b - r) / d + 2; break;
+      case b: h = (r - g) / d + 4; break;
+    }
+    h /= 6;
+  }
+
+  return [h, s, l];
 }
 
 // Function to rotate a matrix (2D array) 90 degrees clockwise
@@ -242,11 +289,17 @@ function dragStart(e) {
   pieceGrid.style.gridTemplateColumns = `repeat(${shape[0].length}, 1fr)`;
   pieceGrid.style.gridTemplateRows = `repeat(${shape.length}, 1fr)`;
   
+  const color = pieceElement.dataset.color;
+  draggedPiece.dataset.color = color;
+  console.log('b', color);
   shape.forEach((row, rowIndex) => {
     row.forEach((cell, colIndex) => {
       const cellElement = document.createElement('div');
       cellElement.style.backgroundImage = cell ? 'url("/bubble.png")' : 'transparent';
       cellElement.style.backgroundSize = 'cover';
+      console.log('a', color);
+      const hueRotation = getHueRotationFromColor(color);
+      cellElement.style.filter = `hue-rotate(${hueRotation}deg)`;
       pieceGrid.appendChild(cellElement);
     });
   });
@@ -260,7 +313,7 @@ function dragStart(e) {
   draggedPiece.dataset.activeRow = activeRow;
   draggedPiece.dataset.activeCol = activeCol;
   draggedPiece.dataset.originalId = pieceElement.id;
-
+  draggedPiece.dataset.color = color;
   pieceElement.classList.add('dragging');
 }
 
@@ -281,6 +334,7 @@ function drag(e) {
 // Unified drop event handler
 function drop(e) {
   e.preventDefault();
+  console.log('drop')
   if (!draggedPiece) return;
 
   const clientX = e.clientX || (e.changedTouches && e.changedTouches[0].clientX);
@@ -300,11 +354,14 @@ function drop(e) {
   // Check if the drop occurred within the grid container boundaries
   if (clientX < gridRect.left || clientX > gridRect.right ||
       clientY < gridRect.top || clientY > gridRect.bottom) {
+        console.log('out of bounds')
     returnPieceToBank(pieceId);
     clearDraggedPiece();
     clearPreview();
     return;
   }
+
+  console.log('in bounds')
 
   // Adjust the target calculation to consider the center of the piece
   const pieceWidth = draggedPiece.offsetWidth;
@@ -314,7 +371,8 @@ function drop(e) {
   const targetIndex = targetRow * gridSize + targetCol;
 
   if (canPlacePiece(pieceShape, targetIndex, gridSize)) {
-    placePiece(pieceShape, targetIndex, gridSize, tetrisPieces[pieceType].color);
+    const color = draggedPiece.dataset.color;
+    placePiece(pieceShape, targetIndex, gridSize, color);
     replaceUsedPiece(document.getElementById(pieceId));
   } else {
     returnPieceToBank(pieceId);
@@ -386,12 +444,12 @@ function canPlacePiece(pieceShape, targetIndex, gridSize) {
       if (pieceShape[row][col]) {
         const gridRow = targetRow + row;
         const gridCol = targetCol + col;
-        if (gridRow >= gridSize || gridCol >= gridSize) {
+        if (gridRow >= gridSize || gridCol >= gridSize || gridRow < 0 || gridCol < 0) {
           return false;
         }
         const cellIndex = gridRow * gridSize + gridCol;
         const cell = document.querySelector(`.grid-cell[data-index="${cellIndex}"]`);
-        if (cell.style.backgroundImage !== '') {
+        if (!cell || cell.style.backgroundImage !== '') {
           return false;
         }
       }
@@ -401,7 +459,7 @@ function canPlacePiece(pieceShape, targetIndex, gridSize) {
 }
 
 // Function to place a piece on the grid
-function placePiece(pieceShape, targetIndex, gridSize) {
+function placePiece(pieceShape, targetIndex, gridSize, color) {
   const targetRow = Math.floor(targetIndex / gridSize);
   const targetCol = targetIndex % gridSize;
 
@@ -410,8 +468,13 @@ function placePiece(pieceShape, targetIndex, gridSize) {
       if (pieceShape[row][col]) {
         const cellIndex = (targetRow + row) * gridSize + (targetCol + col);
         const cell = document.querySelector(`.grid-cell[data-index="${cellIndex}"]`);
-        cell.style.backgroundImage = 'url("/bubble.png")';
-        cell.style.backgroundSize = 'cover';
+        if (cell) {
+          cell.style.backgroundImage = 'url("/bubble.png")';
+          cell.style.backgroundSize = 'cover';
+          const hueRotation = getHueRotationFromColor(color);
+          cell.style.filter = `hue-rotate(${hueRotation}deg)`;
+          //cell.style.filter = color;
+        }
       }
     }
   }
@@ -474,6 +537,7 @@ function clearRow(row, gridSize) {
     const cellIndex = row * gridSize + col;
     const cell = document.querySelector(`.grid-cell[data-index="${cellIndex}"]`);
     cell.style.backgroundImage = '';
+    cell.style.filter = '';
   }
 }
 
@@ -483,6 +547,7 @@ function clearColumn(col, gridSize) {
     const cellIndex = row * gridSize + col;
     const cell = document.querySelector(`.grid-cell[data-index="${cellIndex}"]`);
     cell.style.backgroundImage = '';
+    cell.style.filter = '';
   }
 }
 
@@ -514,6 +579,7 @@ function resetGame() {
   const gridCells = document.querySelectorAll('.grid-cell');
   gridCells.forEach(cell => {
     cell.style.backgroundImage = '';
+    cell.style.filter = '';
     cell.classList.remove('preview');
   });
 
