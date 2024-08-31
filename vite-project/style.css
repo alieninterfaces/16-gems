@@ -99,17 +99,21 @@ button:focus-visible {
 }
 
 /* Add these new styles for the game grid */
+#game-grid-container {
+  padding: 5px;
+  border-radius: 4px;
+}
+
 #game-grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 5px;
-  max-width: 300px;
-  margin: 20px auto;
+  margin: -5px;
 }
 
 .grid-cell {
   aspect-ratio: 1;
-  background-color: #1a1a1a;
+  background-color: #2a2a2a;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -130,7 +134,7 @@ button:focus-visible {
   /* ... existing light mode styles ... */
 
   .grid-cell {
-    background-color: #e0e0e0;
+    background-color: #f0f0f0;
   }
 
   .grid-cell:hover {
@@ -161,6 +165,7 @@ button:focus-visible {
   background-color: rgba(255, 255, 255, 0.1);
   transition: transform 0.3s ease;
   transition: opacity 0.3s ease;
+  touch-action: none; /* Prevents default touch actions like scrolling */
 }
 
 .tetris-piece.unplaceable {

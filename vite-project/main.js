@@ -18,6 +18,14 @@ const tetrisPieces = {
     ],
     color: '#f0a000'
   },
+  J: {
+    shape: [
+      [0, 1],
+      [0, 1],
+      [1, 1]
+    ],
+    color: '#0000f0'
+  },
   T: {
     shape: [
       [1, 1, 1],
@@ -31,6 +39,41 @@ const tetrisPieces = {
       [1, 1]
     ],
     color: '#f0f000'
+  },
+  S: {
+    shape: [
+      [0, 1, 1],
+      [1, 1, 0]
+    ],
+    color: '#00f000'
+  },
+  Z: {
+    shape: [
+      [1, 1, 0],
+      [0, 1, 1]
+    ],
+    color: '#f00000'
+  },
+  Single: {
+    shape: [
+      [1]
+    ],
+    color: '#f0a0f0'
+  },
+  Plus: {
+    shape: [
+      [0, 1, 0],
+      [1, 1, 1],
+      [0, 1, 0]
+    ],
+    color: '#a0a0a0'
+  },
+  U: {
+    shape: [
+      [1, 0, 1],
+      [1, 1, 1]
+    ],
+    color: '#f0f0a0'
   }
 };
 
@@ -41,7 +84,9 @@ let draggedPiece = null;
 // Function to create the game grid
 function createGameGrid() {
   const gameGrid = document.getElementById('game-grid');
-  for (let i = 0; i < 25; i++) {
+  const gridSize = 5;
+
+  for (let i = 0; i < gridSize * gridSize; i++) {
     const cell = document.createElement('div');
     cell.className = 'grid-cell';
     cell.dataset.index = i;
@@ -106,7 +151,8 @@ function rotateMatrix(matrix) {
 function renderTetrisPieces() {
   const tetrisBank = document.getElementById('tetris-bank');
   tetrisBank.innerHTML = ''; // Clear existing pieces
-  for (let i = 0; i < 4; i++) {
+  const numPieces = 5; // Increase the number of pieces in the bank
+  for (let i = 0; i < numPieces; i++) {
     const randomPiece = getRandomPiece();
     renderTetrisPiece(randomPiece.key, randomPiece.piece, tetrisBank);
   }
@@ -212,14 +258,15 @@ function showPreview(e) {
 
   const shape = JSON.parse(draggedPiece.dataset.shape);
   const gridSize = 5;
-  const cellSize = document.querySelector('.grid-cell').offsetWidth;
-  const gridRect = document.getElementById('game-grid').getBoundingClientRect();
+  const gridContainer = document.getElementById('game-grid-container');
+  const gridRect = gridContainer.getBoundingClientRect();
+  const cellSize = (gridRect.width - 10) / gridSize; // Subtract padding
   
   const activeRow = parseInt(draggedPiece.dataset.activeRow || 0);
   const activeCol = parseInt(draggedPiece.dataset.activeCol || 0);
 
-  const targetCol = Math.floor((e.clientX - gridRect.left) / cellSize) - activeCol;
-  const targetRow = Math.floor((e.clientY - gridRect.top) / cellSize) - activeRow;
+  const targetCol = Math.floor((e.clientX - gridRect.left - 5) / cellSize) - activeCol;
+  const targetRow = Math.floor((e.clientY - gridRect.top - 5) / cellSize) - activeRow;
   const targetIndex = targetRow * gridSize + targetCol;
 
   clearPreview();
@@ -341,21 +388,31 @@ function drop(e) {
   const activeCol = parseInt(draggedPiece.dataset.activeCol);
 
   const gridSize = 5;
-  const cellSize = document.querySelector('.grid-cell').offsetWidth;
-  const gridRect = document.getElementById('game-grid').getBoundingClientRect();
-  
-  const targetCol = Math.floor((e.clientX - gridRect.left) / cellSize) - activeCol;
-  const targetRow = Math.floor((e.clientY - gridRect.top) / cellSize) - activeRow;
+  const gridContainer = document.getElementById('game-grid-container');
+  const gridRect = gridContainer.getBoundingClientRect();
+  const cellSize = (gridRect.width - 10) / gridSize; // Subtract padding
+
+  // Check if the drop occurred within the grid container boundaries
+  if (e.clientX < gridRect.left || e.clientX > gridRect.right ||
+      e.clientY < gridRect.top || e.clientY > gridRect.bottom) {
+    returnPieceToBank(pieceId);
+    clearDraggedPiece();
+    clearPreview();
+    return;
+  }
+
+  const targetCol = Math.floor((e.clientX - gridRect.left - 5) / cellSize) - activeCol;
+  const targetRow = Math.floor((e.clientY - gridRect.top - 5) / cellSize) - activeRow;
   const targetIndex = targetRow * gridSize + targetCol;
 
   if (canPlacePiece(pieceShape, targetIndex, gridSize)) {
     placePiece(pieceShape, targetIndex, gridSize, tetrisPieces[pieceType].color);
     replaceUsedPiece(document.getElementById(pieceId));
   } else {
-    // If the piece can't be placed, just clear the dragged piece
-    clearDraggedPiece();
+    returnPieceToBank(pieceId);
   }
 
+  clearDraggedPiece();
   clearPreview();
 }
 
@@ -525,6 +582,12 @@ function resetGame() {
     draggedPiece = null;
   }
 
+  // Reset opacity of all pieces in the bank
+  const bankPieces = document.querySelectorAll('.tetris-piece');
+  bankPieces.forEach(piece => {
+    piece.style.opacity = '1';
+  });
+
   // Clear any ongoing drag operation
   if (document.draggedPiece) {
     document.draggedPiece = null;
@@ -601,6 +664,14 @@ function updatePiecesOpacity() {
     piece.classList.toggle('unplaceable', !canBePlaced);
     piece.draggable = canBePlaced;
   });
+}
+
+// Add a new function to return the piece to the bank
+function returnPieceToBank(pieceId) {
+  const originalPiece = document.getElementById(pieceId);
+  if (originalPiece) {
+    originalPiece.classList.remove('dragging');
+  }
 }
 
 // Call the initialization function when the DOM is loaded
