@@ -3,7 +3,7 @@ import { GRID_SIZE, VERTICAL_DRAG_OFFSET, BUBBLE_IMAGE_URL } from './constants.j
 import { canPlacePiece, placePiece } from './gameLogic.js';
 import { replaceUsedPiece } from './pieces.js';
 import { getHueRotationFromColor } from './utils.js';
-import { updatePiecesOpacity } from './gameBoard.js';
+import { updatePiecesOpacity, canPieceBePlacedAnywhere } from './gameBoard.js';
 import { calculateTargetPosition } from './utils.js';
 
 let draggedPiece = null;
@@ -103,7 +103,17 @@ function drop(e) {
     replaceUsedPiece(document.getElementById(pieceId));
     updatePiecesOpacity();
   } else {
-    returnPieceToBank(pieceId);
+    const nearestPlaceablePosition = findNearestPlaceablePosition(pieceShape, Math.floor(targetIndex / GRID_SIZE), targetIndex % GRID_SIZE);
+    if (nearestPlaceablePosition) {
+      const { row: nearestRow, col: nearestCol } = nearestPlaceablePosition;
+      const newTargetIndex = nearestRow * GRID_SIZE + nearestCol;
+      const color = draggedPiece.dataset.color;
+      placePiece(pieceShape, newTargetIndex, color);
+      replaceUsedPiece(document.getElementById(pieceId));
+      updatePiecesOpacity();
+    } else {
+      returnPieceToBank(pieceId);
+    }
   }
 
   clearDraggedPiece();
@@ -179,6 +189,13 @@ function showPreview(clientX, clientY) {
   const gridContainer = document.getElementById('game-grid-container');
   const gridRect = gridContainer.getBoundingClientRect();
   
+  // Check if the cursor is outside the grid
+  if (clientX < gridRect.left || clientX > gridRect.right ||
+      clientY < gridRect.top || clientY > gridRect.bottom) {
+    clearPreview();
+    return;
+  }
+
   const activeRow = parseInt(draggedPiece.dataset.activeRow);
   const activeCol = parseInt(draggedPiece.dataset.activeCol);
 
@@ -196,7 +213,43 @@ function showPreview(clientX, clientY) {
         }
       }
     }
+  } else {
+    const nearestPlaceablePosition = findNearestPlaceablePosition(shape, targetRow, targetCol);
+    if (nearestPlaceablePosition) {
+      const { row: nearestRow, col: nearestCol } = nearestPlaceablePosition;
+      for (let row = 0; row < shape.length; row++) {
+        for (let col = 0; col < shape[row].length; col++) {
+          if (shape[row][col]) {
+            const cellIndex = (nearestRow + row) * GRID_SIZE + (nearestCol + col);
+            const cell = document.querySelector(`.grid-cell[data-index="${cellIndex}"]`);
+            if (cell) cell.classList.add('preview');
+          }
+        }
+      }
+    }
   }
+}
+
+function findNearestPlaceablePosition(shape, startRow, startCol) {
+  const maxDistance = Math.max(GRID_SIZE - shape.length, GRID_SIZE - shape[0].length);
+  
+  for (let distance = 1; distance <= maxDistance; distance++) {
+    for (let dRow = -distance; dRow <= distance; dRow++) {
+      for (let dCol = -distance; dCol <= distance; dCol++) {
+        if (Math.abs(dRow) === distance || Math.abs(dCol) === distance) {
+          const newRow = startRow + dRow;
+          const newCol = startCol + dCol;
+          const newIndex = newRow * GRID_SIZE + newCol;
+          
+          if (canPlacePiece(shape, newIndex)) {
+            return { row: newRow, col: newCol };
+          }
+        }
+      }
+    }
+  }
+  
+  return null; // No placeable position found
 }
 
 function clearPreview() {

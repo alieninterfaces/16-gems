@@ -59,7 +59,7 @@ export function updatePiecesOpacity() {
   });
 }
 
-function canPieceBePlacedAnywhere(shape) {
+export function canPieceBePlacedAnywhere(shape) {
   for (let row = 0; row < GRID_SIZE; row++) {
     for (let col = 0; col < GRID_SIZE; col++) {
       const index = row * GRID_SIZE + col;
