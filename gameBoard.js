@@ -1,8 +1,7 @@
-import { tetrisPieces, getRandomPiece } from './pieces.js';
+import { getRandomPiece } from './pieces.js';
 import { canPlacePiece } from './gameLogic.js';
 import { getHueRotationFromColor, rotateMatrix } from './utils.js';
 import { GRID_SIZE, NUM_BANK_PIECES, BUBBLE_IMAGE_URL } from './constants.js';
-import { initDragAndDrop } from './dragAndDrop.js';
 
 export function createGameGrid() {
   const gameGrid = document.getElementById('game-grid');

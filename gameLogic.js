@@ -1,6 +1,6 @@
 import { GRID_SIZE, BUBBLE_IMAGE_URL } from './constants.js';
 import { updateScore } from './scoring.js';
-import { getHueRotationFromColor, calculateTargetPosition, getGridCell, setGridCellBackground } from './utils.js';
+import { getGridCell, setGridCellBackground } from './utils.js';
 import { renderTetrisPieces, updatePiecesOpacity } from './gameBoard.js';
 import { resetScore } from './scoring.js';
 

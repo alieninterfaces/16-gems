@@ -1,5 +1,4 @@
 import { renderTetrisPiece } from './gameBoard.js';
-import { initDragAndDrop } from './dragAndDrop.js';
 import { updatePiecesOpacity } from './gameBoard.js';
 
 // Define Tetris pieces
