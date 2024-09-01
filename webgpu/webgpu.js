@@ -11,13 +11,13 @@ export async function initWebGPU(canvas) {
   const context = canvas.getContext('webgpu');
   const format = navigator.gpu.getPreferredCanvasFormat();
 
-  const pipeline = await createPipeline(device, format);
-
   context.configure({
     device,
     format,
     alphaMode: 'opaque',
   });
+
+  const pipeline = await createPipeline(device, format);
 
   return { device, context, format, pipeline };
 }
@@ -90,7 +90,11 @@ async function createPipeline(device, format) {
   });
 }
 
-export function createBuffers(device) {
+let instanceBuffer;
+let device;
+
+export function createBuffers(gpuDevice) {
+  device = gpuDevice;
   const vertices = new Float32Array([
     // Vertex positions for a single cell (two triangles)
     -0.5, -0.5, 0.0,
@@ -111,23 +115,18 @@ export function createBuffers(device) {
   vertexBuffer.unmap();
 
   // Create instance buffer for colors and border colors
-  const instanceData = new Float32Array(GRID_SIZE * GRID_SIZE * 8); // 4 for fill color, 4 for border color
+  const instanceData = new Float32Array(GRID_SIZE * GRID_SIZE * 8);
   for (let i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
     const offset = i * 8;
     // Fill color (white for all squares)
     instanceData.set([1.0, 1.0, 1.0, 1.0], offset);
-    
-    // Border color (blue for even squares, black for odd squares)
-    if (i % 2 === 0) {
-      instanceData.set([0.0, 0.0, 1.0, 1.0], offset + 4); // Blue
-    } else {
-      instanceData.set([0.0, 0.0, 0.0, 1.0], offset + 4); // Black
-    }
+    // Border color (blue for the first square, black for the rest)
+    instanceData.set([0.0, 0.0, 0.0, 1.0], offset + 4); // Black for the rest
   }
 
-  const instanceBuffer = device.createBuffer({
+  instanceBuffer = device.createBuffer({
     size: instanceData.byteLength,
-    usage: GPUBufferUsage.VERTEX,
+    usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
     mappedAtCreation: true,
   });
 
@@ -144,6 +143,25 @@ export function createBuffers(device) {
   device.queue.writeBuffer(borderColorBuffer, 0, borderColor);
 
   return { vertexBuffer, instanceBuffer, borderColorBuffer };
+}
+
+export function updateDropRegions(dropRegions) {
+  console.log(dropRegions);
+  const instanceData = new Float32Array(GRID_SIZE * GRID_SIZE * 8);
+  for (let i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
+    const offset = i * 8;
+    // Fill color (white for all squares)
+    instanceData.set([1.0, 1.0, 1.0, 1.0], offset);
+    
+    // Border color (blue for drop regions, black for others)
+    if (dropRegions.includes(i)) {
+      instanceData.set([0.0, 0.0, 1.0, 1.0], offset + 4); // Blue
+    } else {
+      instanceData.set([0.0, 0.0, 0.0, 1.0], offset + 4); // Black
+    }
+  }
+
+  device.queue.writeBuffer(instanceBuffer, 0, instanceData);
 }
 
 export function render(device, context, vertexBuffer, instanceBuffer, borderColorBuffer, pipeline) {

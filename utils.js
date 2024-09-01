@@ -47,33 +47,26 @@ export function rgbToHsl(r, g, b) {
 }
 
 // Function to get the active cell based on mouse position
-export function getActiveCell(shape, offsetX, offsetY, cellSize) {
-  const row = Math.floor(offsetY / cellSize);
-  const col = Math.floor(offsetX / cellSize);
-  
-  if (shape[row] && shape[row][col]) {
-    return [row, col];
-  }
-  
-  // If the clicked cell is not active, find the nearest active cell
+export function getActiveCell(shape, centerX, centerY, cellSize) {
   const rows = shape.length;
   const cols = shape[0].length;
-  let minDistance = Infinity;
-  let nearestActiveCell = [0, 0];
 
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      if (shape[r][c]) {
-        const distance = Math.sqrt(Math.pow(r - row, 2) + Math.pow(c - col, 2));
-        if (distance < minDistance) {
-          minDistance = distance;
-          nearestActiveCell = [r, c];
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      if (shape[row][col]) {
+        const cellCenterX = (col + 0.5) * cellSize;
+        const cellCenterY = (row + 0.5) * cellSize;
+
+        if (Math.abs(cellCenterX - centerX) < cellSize / 2 &&
+            Math.abs(cellCenterY - centerY) < cellSize / 2) {
+          return [row, col];
         }
       }
     }
   }
 
-  return nearestActiveCell;
+  // If no active cell is found, return the center cell
+  return [Math.floor(rows / 2), Math.floor(cols / 2)];
 }
 
 export function getGridCell(index) {
@@ -98,9 +91,17 @@ import { GRID_SIZE } from './constants.js';
 
 export function calculateTargetPosition(clientX, clientY, gridRect, activeRow, activeCol) {
   const cellSize = gridRect.width / GRID_SIZE;
-  const targetCol = Math.floor((clientX - gridRect.left) / cellSize) - activeCol;
-  const targetRow = Math.floor((clientY - gridRect.top) / cellSize) - activeRow;
+  const gridX = clientX - gridRect.left;
+  const gridY = clientY - gridRect.top;
+
+  let targetCol = Math.floor(gridX / cellSize) - activeCol;
+  let targetRow = Math.floor(gridY / cellSize) - activeRow;
+
+  // Ensure the target position is within the grid boundaries
+  targetCol = Math.max(0, Math.min(targetCol, GRID_SIZE - 1));
+  targetRow = Math.max(0, Math.min(targetRow, GRID_SIZE - 1));
+
   const targetIndex = targetRow * GRID_SIZE + targetCol;
-  
+
   return { targetCol, targetRow, targetIndex };
 }

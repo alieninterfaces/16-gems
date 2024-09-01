@@ -41,6 +41,13 @@ h1 {
   line-height: 1.1;
 }
 
+canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 2;
+}
+
 #app {
   max-width: 1280px;
   margin: 0 auto;
@@ -107,6 +114,7 @@ button:focus-visible {
 #game-grid-container {
   padding: 5px;
   border-radius: 4px;
+  position: relative;
 }
 
 #game-grid {

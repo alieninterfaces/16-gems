@@ -1,14 +1,15 @@
-import { getActiveCell } from './utils.js';
+import { getActiveCell, calculateTargetPosition } from './utils.js';
 import { GRID_SIZE, VERTICAL_DRAG_OFFSET, BUBBLE_IMAGE_URL } from './constants.js';
 import { canPlacePiece, placePiece } from './gameLogic.js';
 import { replaceUsedPiece } from './pieces.js';
 import { getHueRotationFromColor } from './utils.js';
 import { updatePiecesOpacity } from './gameBoard.js';
-import { calculateTargetPosition } from './utils.js';
+import { updateDropRegions } from './webgpu/webgpu.js';
 
 let draggedPiece = null;
 let lastTouchX = 0;
 let lastTouchY = 0;
+let currentShape = null;
 
 export function initDragAndDrop() {
   // Remove previous event listeners to avoid duplicates
@@ -52,6 +53,10 @@ function dragStart(e) {
   document.body.appendChild(draggedPiece);
 
   updateDraggedPiecePosition(clientX, clientY, activeRow, activeCol, cellSize);
+
+  // Update WebGPU drop regions
+  currentShape = JSON.parse(draggedPiece.dataset.shape);
+  updateDropRegionsForShape(currentShape);
 }
 
 function drag(e) {
@@ -67,7 +72,19 @@ function drag(e) {
   const activeRow = parseInt(draggedPiece.dataset.activeRow || 0);
   const activeCol = parseInt(draggedPiece.dataset.activeCol || 0);
   updateDraggedPiecePosition(clientX, clientY, activeRow, activeCol, cellSize);
+  
+  const gridContainer = document.getElementById('game-grid-container');
+  const gridRect = gridContainer.getBoundingClientRect();
+  const { targetCol, targetRow } = calculateTargetPosition(clientX, clientY, gridRect, activeRow, activeCol);
+
   showPreview(clientX, clientY);
+
+  // Only update drop regions if the shape has changed
+  const newShape = JSON.parse(draggedPiece.dataset.shape);
+  if (JSON.stringify(newShape) !== JSON.stringify(currentShape)) {
+    currentShape = newShape;
+    updateDropRegionsForShape(currentShape);
+  }
 }
 
 function drop(e) {
@@ -92,6 +109,7 @@ function drop(e) {
     returnPieceToBank(pieceId);
     clearDraggedPiece();
     clearPreview();
+    updateDropRegions([]); // Clear WebGPU drop regions
     return;
   }
 
@@ -108,6 +126,8 @@ function drop(e) {
 
   clearDraggedPiece();
   clearPreview();
+  updateDropRegions([]); // Clear WebGPU drop regions
+  currentShape = null;
 }
 
 function createDraggedPieceElement(shape, color, activeRow, activeCol, originalId) {
@@ -217,6 +237,54 @@ function returnPieceToBank(pieceId) {
   if (originalPiece) {
     originalPiece.classList.remove('dragging');
   }
+}
+
+function getValidDropRegions(shape) {
+  const validRegions = [];
+  const shapeHeight = shape.length;
+  const shapeWidth = shape[0].length;
+
+  for (let row = 0; row <= GRID_SIZE - shapeHeight; row++) {
+    for (let col = 0; col <= GRID_SIZE - shapeWidth; col++) {
+      const index = row * GRID_SIZE + col;
+      if (canPlacePiece(shape, index)) {
+        validRegions.push({ row, col });
+      }
+    }
+  }
+  return validRegions;
+}
+
+function mapDropRegionsToWebGPU(dropRegions, webgpuRect, gridRect) {
+  const mappedDropRegions = [];
+  const cellSize = gridRect.width / GRID_SIZE;
+  const scaleX = webgpuRect.width / gridRect.width;
+  const scaleY = webgpuRect.height / gridRect.height;
+  const offsetX = (gridRect.left - webgpuRect.left) / cellSize;
+  const offsetY = (gridRect.top - webgpuRect.top) / cellSize;
+
+  for (const { row, col } of dropRegions) {
+    const mappedX = (col + offsetX) * scaleX;
+    const mappedY = (row + offsetY) * scaleY;
+    mappedDropRegions.push({ x: mappedX, y: mappedY });
+  }
+
+  return mappedDropRegions;
+}
+
+function updateDropRegionsForShape(shape) {
+  const dropRegions = getValidDropRegions(shape);
+  console.log('Valid drop regions:', dropRegions);
+  
+  const gridContainer = document.getElementById('game-grid-container');
+  const gridRect = gridContainer.getBoundingClientRect();
+  const webgpuCanvas = document.getElementById('webgpu-canvas');
+  const webgpuRect = webgpuCanvas.getBoundingClientRect();
+  
+  const mappedDropRegions = mapDropRegionsToWebGPU(dropRegions, webgpuRect, gridRect);
+  console.log('Mapped drop regions:', mappedDropRegions);
+  
+  updateDropRegions(mappedDropRegions);
 }
 
 // Export necessary functions
