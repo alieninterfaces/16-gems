@@ -22,17 +22,13 @@ export async function initWebGPU(canvas) {
 
 export function createBuffers(device) {
   const vertices = new Float32Array([
-    // Vertex positions for a single triangle
-    0.0,  0.5, 0.0,
-   -0.5, -0.5, 0.0,
-    0.5, -0.5, 0.0,
-  ]);
-
-  const colors = new Float32Array([
-    // Colors for each vertex
-    1.0, 0.0, 0.0, // Red
-    0.0, 1.0, 0.0, // Green
-    0.0, 0.0, 1.0, // Blue
+    // Vertex positions for a single cell (two triangles)
+    -0.5, -0.5, 0.0,
+     0.5, -0.5, 0.0,
+    -0.5,  0.5, 0.0,
+     0.5, -0.5, 0.0,
+     0.5,  0.5, 0.0,
+    -0.5,  0.5, 0.0,
   ]);
 
   const vertexBuffer = device.createBuffer({
@@ -44,19 +40,10 @@ export function createBuffers(device) {
   new Float32Array(vertexBuffer.getMappedRange()).set(vertices);
   vertexBuffer.unmap();
 
-  const colorBuffer = device.createBuffer({
-    size: colors.byteLength,
-    usage: GPUBufferUsage.VERTEX,
-    mappedAtCreation: true,
-  });
-
-  new Float32Array(colorBuffer.getMappedRange()).set(colors);
-  colorBuffer.unmap();
-
-  return { vertexBuffer, colorBuffer };
+  return { vertexBuffer };
 }
 
-export function render(device, context, vertexBuffer, colorBuffer, pipeline) {
+export function render(device, context, vertexBuffer, pipeline) {
   const commandEncoder = device.createCommandEncoder();
   const textureView = context.getCurrentTexture().createView();
 
@@ -64,7 +51,7 @@ export function render(device, context, vertexBuffer, colorBuffer, pipeline) {
     colorAttachments: [{
       view: textureView,
       loadOp: 'clear', // Specify how the color attachment should be loaded
-      clearValue: { r: 0, g: 0, b: 0, a: 1 }, // Clear to black
+      clearValue: { r: 1, g: 1, b: 1, a: 1 }, // Clear to white
       storeOp: 'store',
     }],
   };
@@ -72,16 +59,15 @@ export function render(device, context, vertexBuffer, colorBuffer, pipeline) {
   const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
   passEncoder.setPipeline(pipeline);
   passEncoder.setVertexBuffer(0, vertexBuffer);
-  passEncoder.setVertexBuffer(1, colorBuffer);
-  passEncoder.draw(3, 1, 0, 0); // Draw the triangle
+  passEncoder.draw(6, GRID_SIZE * GRID_SIZE, 0, 0); // Draw the entire grid
   passEncoder.end(); // Use end() instead of endPass()
 
   device.queue.submit([commandEncoder.finish()]);
 }
 
-export function startRenderLoop(device, context, vertexBuffer, colorBuffer, pipeline) {
+export function startRenderLoop(device, context, vertexBuffer, pipeline) {
   function frame() {
-    render(device, context, vertexBuffer, colorBuffer, pipeline);
+    render(device, context, vertexBuffer, pipeline);
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);

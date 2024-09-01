@@ -10,7 +10,7 @@ async function startGame() {
 
   const canvas = document.getElementById('webgpu-canvas');
   const { device, context, format } = await initWebGPU(canvas);
-  const { vertexBuffer, colorBuffer } = createBuffers(device);
+  const { vertexBuffer } = createBuffers(device);
 
   const vertexShaderCode = await loadShaderCode('webgpu/vertex.wgsl');
   const fragmentShaderCode = await loadShaderCode('webgpu/fragment.wgsl');
@@ -29,14 +29,6 @@ async function startGame() {
             format: 'float32x3',
           }],
         },
-        {
-          arrayStride: 3 * 4,
-          attributes: [{
-            shaderLocation: 1,
-            offset: 0,
-            format: 'float32x3',
-          }],
-        },
       ],
     },
     fragment: {
@@ -47,7 +39,7 @@ async function startGame() {
     primitive: { topology: 'triangle-list' },
   });
 
-  startRenderLoop(device, context, vertexBuffer, colorBuffer, pipeline);
+  startRenderLoop(device, context, vertexBuffer, pipeline);
 
   const resetButton = document.getElementById('reset-button');
   resetButton.addEventListener('click', handleResetGame);
