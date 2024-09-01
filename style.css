@@ -33,6 +33,7 @@ body {
   -webkit-user-select: none;
   -ms-user-select: none;
   user-select: none;
+  overflow: hidden;
 }
 
 h1 {
@@ -110,7 +111,7 @@ button:focus-visible {
 
 #game-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(8, 1fr);
   gap: 5px;
   margin: -5px;
 }
@@ -126,7 +127,7 @@ button:focus-visible {
   border-radius: 4px;
   transition: background-color 0.3s;
   /* Add this line to ensure the cell can receive dropped items */
-  min-height: 50px;
+  min-height: 40px;
 }
 
 .grid-cell:hover {

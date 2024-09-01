@@ -18,7 +18,7 @@ const tetrisPieces = {
       [1, 0],
       [1, 1]
     ],
-    color: '#f0a000'
+    color: '#c54155'
   },
   J: {
     shape: [
@@ -26,7 +26,7 @@ const tetrisPieces = {
       [0, 1],
       [1, 1]
     ],
-    color: '#0000f0'
+    color: '#c54155'
   },
   T: {
     shape: [
@@ -40,7 +40,7 @@ const tetrisPieces = {
       [1, 1],
       [1, 1]
     ],
-    color: '#f0f000'
+    color: '#ae59b3'
   },
   S: {
     shape: [
@@ -75,18 +75,32 @@ const tetrisPieces = {
       [1, 0, 1],
       [1, 1, 1]
     ],
-    color: '#f0f0a0'
+    color: '#7bac3c'
+  },
+  BigSquare: {
+    shape: [
+      [1, 1, 1],
+      [1, 1, 1],
+      [1, 1, 1]
+    ],
+    color: '#9e4b1e'
+  },
+  Two: {
+    shape: [
+      [1, 1]
+    ],
+    color: '#3c77b9'
   }
 };
 
 let selectedPiece = null;
 let score = 0;
 let draggedPiece = null;
+const gridSize = 8;
 
 // Function to create the game grid
 function createGameGrid() {
   const gameGrid = document.getElementById('game-grid');
-  const gridSize = 5;
 
   for (let i = 0; i < gridSize * gridSize; i++) {
     const cell = document.createElement('div');
@@ -204,7 +218,7 @@ function rotateMatrix(matrix) {
 function renderTetrisPieces() {
   const tetrisBank = document.getElementById('tetris-bank');
   tetrisBank.innerHTML = ''; // Clear existing pieces
-  const numPieces = 5; // Increase the number of pieces in the bank
+  const numPieces = 3; // Increase the number of pieces in the bank
   for (let i = 0; i < numPieces; i++) {
     const randomPiece = getRandomPiece();
     renderTetrisPiece(randomPiece.key, randomPiece.piece, tetrisBank);
@@ -248,7 +262,6 @@ function initDragAndDrop() {
 
 // Unified drag start event handler
 function dragStart(e) {
-  console.log('dragStart', e)
   e.preventDefault();
 
   const pieceElement = e.target.closest('.tetris-piece');
@@ -256,11 +269,11 @@ function dragStart(e) {
     return;
   }
 
-  console.log('pieceElement', pieceElement)
   const shape = JSON.parse(pieceElement.dataset.shape);
   const rect = pieceElement.getBoundingClientRect();
-  const clientX = e.clientX || e.touches[0].clientX;
-  const clientY = e.clientY || e.touches[0].clientY;
+  let clientX = e.clientX || e.touches[0].clientX;
+  let clientY = e.clientY || e.touches[0].clientY;
+  clientY -= 100;
 
   // Calculate the center of the piece
   const centerX = rect.width / 2;
@@ -292,13 +305,11 @@ function dragStart(e) {
   
   const color = pieceElement.dataset.color;
   draggedPiece.dataset.color = color;
-  console.log('b', color);
   shape.forEach((row, rowIndex) => {
     row.forEach((cell, colIndex) => {
       const cellElement = document.createElement('div');
       cellElement.style.backgroundImage = cell ? 'url("./bubble.png")' : 'transparent';
       cellElement.style.backgroundSize = 'cover';
-      console.log('a', color);
       const hueRotation = getHueRotationFromColor(color);
       cellElement.style.filter = `hue-rotate(${hueRotation}deg)`;
       pieceGrid.appendChild(cellElement);
@@ -320,11 +331,11 @@ function dragStart(e) {
 
 // Unified drag event handler
 function drag(e) {
-  console.log('drag', e)
   e.preventDefault();
   if (draggedPiece) {
-    const clientX = e.clientX || e.touches[0].clientX;
-    const clientY = e.clientY || e.touches[0].clientY;
+    let clientX = e.clientX || e.touches[0].clientX;
+    let clientY = e.clientY || e.touches[0].clientY;
+    clientY -= 100;
     lastTouchX = clientX;
     lastTouchY = clientY;
     const cellSize = document.querySelector('.grid-cell').offsetWidth;
@@ -337,23 +348,21 @@ function drag(e) {
 
 
 function drop(e) {
-  console.log('drop', e.target)
   if (e.target.nodeName === 'BUTTON') return;
   e.preventDefault();
   if (!draggedPiece) return;
 
-  const clientX = e.clientX || lastTouchX;
-  const clientY = e.clientY || lastTouchY;
-  const cellSize = document.querySelector('.grid-cell').offsetWidth;
+  let clientX = lastTouchX;
+  let clientY = lastTouchY;
+  //const cellSize = document.querySelector('.grid-cell').offsetWidth;
+  const gridContainer = document.getElementById('game-grid-container');
+  const gridRect = gridContainer.getBoundingClientRect();
+  const cellSize = (gridRect.width) / gridSize; // Subtract padding
   const pieceId = draggedPiece.dataset.originalId;
   const pieceShape = JSON.parse(draggedPiece.dataset.shape);
 
   lastTouchX = null;
   lastTouchY = null;
-
-  const gridSize = 5;
-  const gridContainer = document.getElementById('game-grid-container');
-  const gridRect = gridContainer.getBoundingClientRect();
 
   // Check if the drop occurred within the grid container boundaries
   if (clientX < gridRect.left || clientX > gridRect.right ||
@@ -366,8 +375,8 @@ function drop(e) {
 
   const pieceWidth = draggedPiece.offsetWidth;
   const pieceHeight = draggedPiece.offsetHeight;
-  const targetCol = Math.floor((clientX - gridRect.left - 5 - pieceWidth / 2) / cellSize);
-  const targetRow = Math.floor((clientY - gridRect.top - 5 - pieceHeight / 2) / cellSize);
+  const targetCol = Math.floor((clientX - gridRect.left - pieceWidth / 2) / cellSize);
+  const targetRow = Math.floor((clientY - gridRect.top - pieceHeight / 2) / cellSize);
   const targetIndex = targetRow * gridSize + targetCol;
 
   if (canPlacePiece(pieceShape, targetIndex, gridSize)) {
@@ -399,17 +408,16 @@ function showPreview(clientX, clientY) {
   if (!draggedPiece) return;
 
   const shape = JSON.parse(draggedPiece.dataset.shape);
-  const gridSize = 5;
   const gridContainer = document.getElementById('game-grid-container');
   const gridRect = gridContainer.getBoundingClientRect();
-  const cellSize = (gridRect.width - 10) / gridSize; // Subtract padding
+  const cellSize = (gridRect.width) / gridSize; // Subtract padding
   
   const pieceWidth = draggedPiece.offsetWidth;
   const pieceHeight = draggedPiece.offsetHeight;
 
   // Adjust the target calculation to consider the center of the piece
-  const targetCol = Math.floor((clientX - gridRect.left - 5 - pieceWidth / 2) / cellSize);
-  const targetRow = Math.floor((clientY - gridRect.top - 5 - pieceHeight / 2) / cellSize);
+  const targetCol = Math.floor((clientX - gridRect.left - pieceWidth / 2) / cellSize);
+  const targetRow = Math.floor((clientY - gridRect.top - pieceHeight / 2) / cellSize);
   const targetIndex = targetRow * gridSize + targetCol;
 
   clearPreview();
@@ -439,6 +447,7 @@ function canPlacePiece(pieceShape, targetIndex, gridSize) {
   const targetRow = Math.floor(targetIndex / gridSize);
   const targetCol = targetIndex % gridSize;
 
+  console.log('can place piece', pieceShape, targetIndex, gridSize, targetRow, targetCol);
   for (let row = 0; row < pieceShape.length; row++) {
     for (let col = 0; col < pieceShape[row].length; col++) {
       if (pieceShape[row][col]) {
@@ -639,7 +648,6 @@ function initGame() {
   // Add reset button functionality
   const resetButton = document.getElementById('reset-button');
   resetButton.addEventListener('click', (e) => {
-    console.log('click')
     e.preventDefault();
     resetGame();
     // Cancel any ongoing drag operation
@@ -671,7 +679,6 @@ function clearDraggedPiece() {
 
 // Add this function to check if a piece can be placed anywhere on the grid
 function canPieceBePlacedAnywhere(shape) {
-  const gridSize = 5;
   for (let row = 0; row < gridSize; row++) {
     for (let col = 0; col < gridSize; col++) {
       const index = row * gridSize + col;
