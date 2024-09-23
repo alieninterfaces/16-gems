@@ -4,18 +4,24 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>5x5 Grid Game with Tetris Pieces</title>
-    <script type="module" crossorigin src="./assets/index-C6D5YL_A.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-DE4WKAHR.css">
+    <script type="module" crossorigin src="./assets/index-RjfkC4iJ.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-hxe7NBc7.css">
   </head>
   <body>
+    <div id="background-container"></div>
     <div id="app">
       <div id="game-container">
+        <div id="score-container">
+          <span id="score" class="score">Score: 0</span>
+          <span id="high-score" class="score">High Score: 0</span>
+        </div>
         <div id="game-grid-container">
           <div id="game-grid"></div>
         </div>
         <div id="tetris-bank"></div>
       </div>
       <button id="reset-button">Reset Game</button>
+      
     </div>
   </body>
 </html>
