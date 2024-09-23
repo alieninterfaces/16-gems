@@ -1,8 +1,12 @@
-import { tetrisPieces, getRandomPiece } from './pieces.js';
+import { getRandomPiece } from './pieces.js';
 import { canPlacePiece } from './gameLogic.js';
 import { getHueRotationFromColor, rotateMatrix } from './utils.js';
-import { GRID_SIZE, NUM_BANK_PIECES, BUBBLE_IMAGE_URL } from './constants.js';
-import { initDragAndDrop } from './dragAndDrop.js';
+import { GRID_SIZE, NUM_BANK_PIECES, BUBBLE_IMAGE_URL, BUBBLE_SIZE } from './constants.js';
+import { RuinBloc } from './block.js';
+import { setCookie, getCookie } from './utils.js';
+
+let score = 0;
+let highScore = parseInt(getCookie('highScore')) || 0;
 
 export function createGameGrid() {
   const gameGrid = document.getElementById('game-grid');
@@ -82,7 +86,8 @@ function updatePieceGrid(grid, shape, color) {
       const cellElement = document.createElement('div');
       cellElement.className = 'piece-cell';
       if (cell) {
-        cellElement.style.backgroundImage = `url("${BUBBLE_IMAGE_URL}")`;
+        const blockURL = new RuinBloc(0, 0, BUBBLE_SIZE, BUBBLE_SIZE).sprite;
+        cellElement.style.backgroundImage = `url("${blockURL}")`;
         cellElement.style.backgroundSize = 'cover';
         const hueRotation = getHueRotationFromColor(color);
         cellElement.style.filter = `hue-rotate(${hueRotation}deg)`;
@@ -91,3 +96,37 @@ function updatePieceGrid(grid, shape, color) {
     });
   });
 }
+
+export function updateScore(clearedRows, clearedColumns) {
+  const clearedCount = clearedRows + clearedColumns;
+  const newPoints = clearedCount * (clearedCount > 1 ? 10 : 1); // 10 points for multiple clears, 1 for single
+  score += newPoints;
+  
+  if (score > highScore) {
+    highScore = score;
+    setCookie('highScore', highScore, 365); // Save for a year
+  }
+  
+  updateScoreDisplay();
+}
+
+function updateScoreDisplay() {
+  const scoreElement = document.getElementById('score');
+  const highScoreElement = document.getElementById('high-score');
+  scoreElement.textContent = `Score: ${score}`;
+  highScoreElement.textContent = `High Score: ${highScore}`;
+}
+
+// Call this function when initializing the game
+export function initializeScore() {
+  score = 0;
+  updateScoreDisplay();
+}
+
+export function resetScore() {
+  score = 0;
+  updateScoreDisplay();
+}
+
+// Make sure to export these functions
+export { score, highScore };

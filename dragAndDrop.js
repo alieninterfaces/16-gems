@@ -1,10 +1,11 @@
 import { getActiveCell } from './utils.js';
-import { GRID_SIZE, VERTICAL_DRAG_OFFSET, BUBBLE_IMAGE_URL } from './constants.js';
+import { GRID_SIZE, VERTICAL_DRAG_OFFSET, BUBBLE_IMAGE_URL, BUBBLE_SIZE } from './constants.js';
 import { canPlacePiece, placePiece } from './gameLogic.js';
 import { replaceUsedPiece } from './pieces.js';
 import { getHueRotationFromColor } from './utils.js';
 import { updatePiecesOpacity, canPieceBePlacedAnywhere } from './gameBoard.js';
 import { calculateTargetPosition } from './utils.js';
+import { RuinBloc} from './block.js';
 
 let draggedPiece = null;
 let lastTouchX = 0;
@@ -155,7 +156,11 @@ function createPieceGrid(shape, color) {
   shape.forEach(row => {
     row.forEach(cell => {
       const cellElement = document.createElement('div');
-      cellElement.style.backgroundImage = cell ? `url("${BUBBLE_IMAGE_URL}")` : 'none';
+
+      const blockURL = new RuinBloc(0, 0, BUBBLE_SIZE, BUBBLE_SIZE).sprite;
+      //TODO:: this should come from the block itself
+
+      cellElement.style.backgroundImage = cell ? `url("${blockURL}")` : 'none';
       cellElement.style.backgroundSize = 'cover';
       const hueRotation = getHueRotationFromColor(color);
       cellElement.style.filter = `hue-rotate(${hueRotation}deg)`;

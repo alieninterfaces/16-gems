@@ -1,8 +1,8 @@
-import { GRID_SIZE, BUBBLE_IMAGE_URL } from './constants.js';
-import { updateScore } from './scoring.js';
-import { getHueRotationFromColor, calculateTargetPosition, getGridCell, setGridCellBackground } from './utils.js';
+import { GRID_SIZE, BUBBLE_IMAGE_URL, BUBBLE_SIZE } from './constants.js';
+import { updateScore, resetScore } from './gameBoard.js';
+import { getGridCell, setGridCellBackground } from './utils.js';
 import { renderTetrisPieces, updatePiecesOpacity } from './gameBoard.js';
-import { resetScore } from './scoring.js';
+import { RuinBloc } from './block.js';
 
 export function canPlacePiece(pieceShape, targetIndex) {
   const targetRow = Math.floor(targetIndex / GRID_SIZE);
@@ -35,7 +35,8 @@ export function placePiece(pieceShape, targetIndex, color) {
     for (let col = 0; col < pieceShape[row].length; col++) {
       if (pieceShape[row][col]) {
         const cellIndex = (targetRow + row) * GRID_SIZE + (targetCol + col);
-        setGridCellBackground(cellIndex, BUBBLE_IMAGE_URL, color);
+        const blockURL = new RuinBloc(0, 0, BUBBLE_SIZE, BUBBLE_SIZE).sprite;
+        setGridCellBackground(cellIndex, blockURL, color);
       }
     }
   }

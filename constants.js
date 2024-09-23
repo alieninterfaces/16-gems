@@ -13,5 +13,7 @@ export const SINGLE_CLEAR_SCORE = 1;
 // URL for the bubble image
 export const BUBBLE_IMAGE_URL = './bubble.png';
 
+export const BUBBLE_SIZE = 139;
+
 // Vertical offset for drag and drop
 export const VERTICAL_DRAG_OFFSET = 100;
