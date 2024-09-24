@@ -12,7 +12,12 @@ function startGame() {
 
 
   const app = document.getElementById('app');
-  const scale = window.innerWidth / 500; // 1vw
+  let scale =1;
+  if (window.innerWidth < window.innerHeight) {
+    scale = window.innerWidth / 500; // 1vw
+  } else {
+    scale = window.innerHeight / 600; // 1vh
+  }
   app.style.transform = `scale(${scale})`;
 
   const resetButton = document.getElementById('reset-button');
@@ -22,7 +27,12 @@ function startGame() {
 //resize handler
 window.addEventListener('resize', () => {
   const app = document.getElementById('app');
-  const scale = window.innerWidth / 500; // 1vw
+let scale =1;
+  if (window.innerWidth < window.innerHeight) {
+    scale = window.innerWidth / 500; // 1vw
+  } else {
+    scale = window.innerHeight / 600; // 1vh
+  }
   app.style.transform = `scale(${scale})`;
 });
 
