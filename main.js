@@ -9,8 +9,21 @@ function startGame() {
   initializeScore();
   initDragAndDrop();
   
+
+
+  const app = document.getElementById('app');
+  const scale = window.innerWidth / 500; // 1vw
+  app.style.transform = `scale(${scale})`;
+
   const resetButton = document.getElementById('reset-button');
   resetButton.addEventListener('click', handleResetGame);
 }
+
+//resize handler
+window.addEventListener('resize', () => {
+  const app = document.getElementById('app');
+  const scale = window.innerWidth / 500; // 1vw
+  app.style.transform = `scale(${scale})`;
+});
 
 document.addEventListener('DOMContentLoaded', startGame);
